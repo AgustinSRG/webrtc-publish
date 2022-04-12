@@ -55,3 +55,14 @@ Here is a list of all the options:
 | `--loop, -l` | Enables loop (for video files). |
 | `--auth, -a <auth-token>` | Sets auth token. |
 | `--secret, -s <secret>` | Provides secret to generate authentication tokens. |
+
+## WebRTC options
+
+You can configure WebRTC configuration options with environment variables:
+
+| Variable Name | Description |
+|---|---|
+| STUN_SERVER | STUN server URL. Example: `stun:stun.l.google.com:19302` |
+| TURN_SERVER | TURN server URL. Set if the server is behind NAT. Example: `turn:turn.example.com:3478` |
+| TURN_USERNAME | Username for the TURN server. |
+| TURN_PASSWORD | Credential for the TURN server. |

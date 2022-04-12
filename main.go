@@ -101,6 +101,11 @@ func main() {
 		}
 	}
 
+	if _, err := os.Stat(ffmpegPath); err != nil {
+		fmt.Println("Error: Could not find 'ffmpeg' at specified location: " + ffmpegPath)
+		return
+	}
+
 	runPublish(source, wsURL, streamId, PublishOptions{
 		loop:      loop,
 		debug:     debug,
