@@ -1,6 +1,6 @@
 # WebRTC Publisher
 
-Utility to publish to [webrtc-cdn](https://github.com/AgustinSRG/webrtc-cdn) using a video source, or an RTMP source.
+Utility to publish to [webrtc-cdn](https://github.com/AgustinSRG/webrtc-cdn) using a video or RTMP source.
 
 It uses [FFMpeg](https://ffmpeg.org/) to convert the source to RTP, and then the [pion/webrtc](https://github.com/pion/webrtc) library to convert it to WebRTC.
 
