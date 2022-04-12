@@ -1,0 +1,14 @@
+# Binary files
+
+webrtc-publish.exe
+webrtc-publish
+
+# Ignore temp files
+
+temp
+
+# Ignore .env
+
+.env
+*.log
+*.bat
