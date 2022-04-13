@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v3"
@@ -53,6 +53,11 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 		panic(err)
 	}
 
+	// Pipe tracks and start FFMPEG
+	go pipeTrack(listenerAudio, audioTrack)
+	go pipeTrack(listenerVideo, videoTrack)
+	go runEncdingProcess(options.ffmpeg, source, listenerVideo.LocalAddr().String(), listenerAudio.LocalAddr().String(), options.debug)
+
 	// Create peer connection
 	peerConnectionConfig := loadWebRTCConfig() // Load config
 	peerConnection, err := webrtc.NewPeerConnection(peerConnectionConfig)
@@ -73,6 +78,31 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 		fmt.Println("Error: " + err.Error())
 	}
 	defer c.Close()
+
+	go func() {
+		for {
+			time.Sleep(20 * time.Second)
+
+			// Send hearbeat message
+			heartbeatMessage := SignalingMessage{
+				method: "HEARTBEAT",
+				params: nil,
+				body:   "",
+			}
+
+			lock.Lock()
+			sendErr := c.WriteMessage(websocket.TextMessage, []byte(heartbeatMessage.serialize()))
+			lock.Unlock()
+
+			if options.debug {
+				fmt.Println(">>>\n" + string(heartbeatMessage.serialize()))
+			}
+
+			if sendErr != nil {
+				return
+			}
+		}
+	}()
 
 	// Send publish message
 	pubMsg := SignalingMessage{
@@ -102,6 +132,7 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 			body:   "",
 		}
 		candidateMsg.params["Request-ID"] = "pub01"
+		candidateMsg.params["Stream-ID"] = streamId
 		if i != nil {
 			b, e := json.Marshal(i.ToJSON())
 			if e != nil {
@@ -112,6 +143,9 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 		}
 
 		c.WriteMessage(websocket.TextMessage, []byte(candidateMsg.serialize()))
+		if options.debug {
+			fmt.Println(">>>\n" + string(candidateMsg.serialize()))
+		}
 	})
 
 	// Connection status handler
@@ -127,16 +161,18 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 	})
 
 	receivedOffer := false
+	closed := false
 
 	// Read websocket messages
 	for {
+		if closed {
+			return
+		}
 		func() {
-			lock.Lock()
-			defer lock.Unlock()
-
 			_, message, err := c.ReadMessage()
 			if err != nil {
-				os.Exit(0)
+				closed = true
+				killProcess()
 				return // Closed
 			}
 
@@ -146,9 +182,12 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 
 			msg := parseSignalingMessage(string(message))
 
+			lock.Lock()
+			defer lock.Unlock()
+
 			if msg.method == "ERROR" {
 				fmt.Println("Error: " + msg.params["error-message"])
-				os.Exit(1)
+				killProcess()
 			} else if msg.method == "OFFER" {
 				if !receivedOffer {
 					receivedOffer = true
@@ -211,17 +250,16 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 						body:   string(answerJSON),
 					}
 					answerMsg.params["Request-ID"] = "pub01"
+					answerMsg.params["Stream-ID"] = streamId
 
 					c.WriteMessage(websocket.TextMessage, []byte(answerMsg.serialize()))
 
-					// Pipe tracks and start FFMPEG
-					go pipeTrack(listenerAudio, audioTrack)
-					go pipeTrack(listenerVideo, videoTrack)
-
-					go runEncdingProcess(options.ffmpeg, source, listenerVideo.LocalAddr().String(), listenerAudio.LocalAddr().String(), options.debug)
+					if options.debug {
+						fmt.Println(">>>\n" + string(answerMsg.serialize()))
+					}
 				}
 			} else if msg.method == "CANDIDATE" {
-				if receivedOffer {
+				if receivedOffer && msg.body != "" {
 					candidate := webrtc.ICECandidateInit{}
 
 					err := json.Unmarshal([]byte(msg.body), &candidate)
@@ -238,7 +276,7 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 				}
 			} else if msg.method == "CLOSE" {
 				fmt.Println("Connection closed by remote host.")
-				os.Exit(0)
+				killProcess()
 			}
 		}()
 	}

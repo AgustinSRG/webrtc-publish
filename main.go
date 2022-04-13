@@ -131,3 +131,12 @@ func printHelp() {
 func printVersion() {
 	fmt.Println("webrtc-publisher 1.0.0")
 }
+
+func killProcess() {
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	proc.Signal(os.Interrupt)
+}
