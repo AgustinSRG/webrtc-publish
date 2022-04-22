@@ -56,7 +56,7 @@ func runPublish(source string, destination url.URL, streamId string, options Pub
 	// Pipe tracks and start FFMPEG
 	go pipeTrack(listenerAudio, audioTrack)
 	go pipeTrack(listenerVideo, videoTrack)
-	go runEncdingProcess(options.ffmpeg, source, listenerVideo.LocalAddr().String(), listenerAudio.LocalAddr().String(), options.debug)
+	go runEncdingProcess(options.ffmpeg, source, listenerVideo.LocalAddr().String(), listenerAudio.LocalAddr().String(), options.debug, options.loop)
 
 	// Create peer connection
 	peerConnectionConfig := loadWebRTCConfig() // Load config
