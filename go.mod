@@ -3,6 +3,7 @@ module github.com/AgustinSRG/webrtc-publish
 go 1.17
 
 require (
+	github.com/AgustinSRG/go-child-process-manager v0.0.0-20220826120208-90beebb5df94
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/websocket v1.5.0
 	github.com/pion/webrtc/v3 v3.1.27
@@ -28,6 +29,6 @@ require (
 	github.com/pion/udp v0.1.1 // indirect
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/sys v0.0.0-20220825204002-c680a09ffe64 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )

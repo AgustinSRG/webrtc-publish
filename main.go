@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+
+	child_process_manager "github.com/AgustinSRG/go-child-process-manager"
 )
 
 // Program entry point
@@ -38,7 +40,7 @@ func main() {
 		u, err := url.Parse(source)
 		if err != nil || (u.Scheme != "rtmp" && u.Scheme != "rtmps") {
 			fmt.Println("The source is not a valid file or RTMP URL")
-			return
+			os.Exit(1)
 		}
 	}
 
@@ -47,7 +49,7 @@ func main() {
 	u, err := url.Parse(destination)
 	if err != nil || (u.Scheme != "ws" && u.Scheme != "wss") {
 		fmt.Println("The destination is not a valid websocket URL")
-		return
+		os.Exit(1)
 	}
 
 	protocol := u.Scheme
@@ -58,6 +60,7 @@ func main() {
 		streamId = u.Path[1:]
 	} else {
 		fmt.Println("The destination URL must contain the stream ID. Example: ws://localhost/stream-id")
+		os.Exit(1)
 	}
 
 	wsURL := url.URL{
@@ -78,7 +81,7 @@ func main() {
 		} else if arg == "--ffmpeg-path" {
 			if i == len(args)-3 {
 				fmt.Println("The option '--ffmpeg-path' requires a value")
-				return
+				os.Exit(1)
 			}
 			ffmpegPath = args[i+1]
 			i++
@@ -87,14 +90,14 @@ func main() {
 		} else if arg == "--auth" || arg == "-a" {
 			if i == len(args)-3 {
 				fmt.Println("The option '--auth' requires a value")
-				return
+				os.Exit(1)
 			}
 			authToken = args[i+1]
 			i++
 		} else if arg == "--secret" || arg == "-s" {
 			if i == len(args)-3 {
 				fmt.Println("The option '--secret' requires a value")
-				return
+				os.Exit(1)
 			}
 			authToken = generateToken(args[i+1], streamId)
 			i++
@@ -103,8 +106,15 @@ func main() {
 
 	if _, err := os.Stat(ffmpegPath); err != nil {
 		fmt.Println("Error: Could not find 'ffmpeg' at specified location: " + ffmpegPath)
-		return
+		os.Exit(1)
 	}
+
+	err = child_process_manager.InitalizeChildProcessManager()
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+		os.Exit(1)
+	}
+	defer child_process_manager.DisposeChildProcessManager()
 
 	runPublish(source, wsURL, streamId, PublishOptions{
 		loop:      loop,
