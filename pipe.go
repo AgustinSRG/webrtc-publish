@@ -8,7 +8,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 )
 
 func pipeTrack(listener *net.UDPConn, track *webrtc.TrackLocalStaticRTP) {
